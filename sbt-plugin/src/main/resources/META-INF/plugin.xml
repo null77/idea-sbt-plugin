@@ -44,6 +44,7 @@
         <stepsBeforeRunProvider implementation="net.orfjackal.sbt.plugin.SbtBeforeRunTaskProvider"/>
         <projectConfigurable implementation="net.orfjackal.sbt.plugin.settings.SbtConfigurable" order="last"/>
         <toolWindow id="SBT Console" anchor="bottom" factoryClass="net.orfjackal.sbt.plugin.SbtToolWindowFactory"/>
+        <externalAnnotator language="Scala" implementationClass="net.orfjackal.sbt.plugin.SbtAnnotator" />
     </extensions>
 
     <project-components>
@@ -60,5 +61,5 @@
             <implementation-class>net.orfjackal.sbt.plugin.settings.SbtApplicationSettingsComponent</implementation-class>
         </component>
     </application-components>
-
+    
 </idea-plugin>
