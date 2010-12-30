@@ -6,6 +6,7 @@ package net.orfjackal.sbt.plugin;
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.execution.filters.Filter;
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -32,7 +33,7 @@ public class SbtErrorCaptureFilter implements Filter {
     @NonNls
     private static final String FILE_PATH_REGEXP = "((?:\\p{Alpha}\\:)?[0-9 a-z_A-Z\\-\\\\./]+)";
     private static final String NUMBER_REGEXP = "([0-9]+)";
-    public static final String ERROR_EXPRESSION = "\\s" + FILE_PATH_REGEXP + ":" + NUMBER_REGEXP + ":\\s([^\n]*)";
+    public static final String ERROR_EXPRESSION = "\\[(.*)]\\s" + FILE_PATH_REGEXP + ":" + NUMBER_REGEXP + ":\\s([^\n]*)";
 
     private Pattern pattern = Pattern.compile(ERROR_EXPRESSION, Pattern.MULTILINE);
 
@@ -77,9 +78,14 @@ public class SbtErrorCaptureFilter implements Filter {
         Matcher match = pattern.matcher(line);
 
         if (match.find()) {
-            String file = match.group(1);
-            int errLine = Integer.parseInt(match.group(2));
-            SbtAnnotator.errorMap.putValue(new File(file), new SbtAnnotator.Error(file, errLine, match.group(3)));
+            HighlightSeverity severity = HighlightSeverity.ERROR;
+            if (match.group(1).equals("warn")) {
+                severity = HighlightSeverity.WARNING;
+            }
+            String file = match.group(2);
+            int errLine = Integer.parseInt(match.group(3));
+            String message = match.group(4);
+            SbtAnnotator.errorMap.putValue(new File(file), new SbtAnnotator.Error(severity, file, errLine, message));
             rescanSet.add(file);
         }
 
