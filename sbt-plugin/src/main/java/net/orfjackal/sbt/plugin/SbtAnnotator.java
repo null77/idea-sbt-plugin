@@ -30,6 +30,7 @@ public class SbtAnnotator implements ExternalAnnotator {
         public String file;
         public int line;
         public String message;
+        public int offset;
         public Error(HighlightSeverity severity, String file, int line, String message) {
             this.severity = severity;
             this.file = file;
@@ -40,16 +41,16 @@ public class SbtAnnotator implements ExternalAnnotator {
 
     public static MultiMap<File, Error> errorMap = new ConcurrentMultiMap<File, Error>();
 
-    TextRange getLineTextRange(String text, int line) {
-        int offset = 0;
+    TextRange getLineTextRange(String text, int line, int offset) {
+        int start = 0;
         while (--line > 0) {
-            offset = text.indexOf("\n", offset) + 1;
+            start = text.indexOf("\n", start) + 1;
         }
-        int lastIndex = text.indexOf("\n", offset) + 1;
+        int lastIndex = text.indexOf("\n", start) + 1;
         if (lastIndex == 0)
             lastIndex = text.length();
 
-        return new TextRange(offset, lastIndex);
+        return new TextRange(start + offset, lastIndex);
     }
 
     public void annotate(PsiFile file, AnnotationHolder holder) {
@@ -62,7 +63,7 @@ public class SbtAnnotator implements ExternalAnnotator {
         Collection<Error> errors = errorMap.get(new File(virtualFile.getPath()));
 
         for (Error error : errors) {
-            TextRange range = getLineTextRange(file.getText(), error.line);
+            TextRange range = getLineTextRange(file.getText(), error.line, error.offset);
             if (error.severity == HighlightSeverity.ERROR) {
                 holder.createErrorAnnotation(range, error.message);
             } else if (error.severity == HighlightSeverity.WARNING) {

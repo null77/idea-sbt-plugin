@@ -33,12 +33,15 @@ public class SbtErrorCaptureFilter implements Filter {
     @NonNls
     private static final String FILE_PATH_REGEXP = "((?:\\p{Alpha}\\:)?[0-9 a-z_A-Z\\-\\\\./]+)";
     private static final String NUMBER_REGEXP = "([0-9]+)";
-    public static final String ERROR_EXPRESSION = "\\[(.*)]\\s" + FILE_PATH_REGEXP + ":" + NUMBER_REGEXP + ":\\s([^\n]*)";
+    private static final String ERROR_EXPRESSION = "\\[(.*)]\\s" + FILE_PATH_REGEXP + ":" + NUMBER_REGEXP + ":\\s([^\n]*)";
+    private static final String OFFSET_EXPRESSION = "\\s(\\s+)\\^";
 
-    private Pattern pattern = Pattern.compile(ERROR_EXPRESSION, Pattern.MULTILINE);
+    private Pattern errorPattern = Pattern.compile(ERROR_EXPRESSION, Pattern.MULTILINE);
+    private Pattern offsetPattern = Pattern.compile(OFFSET_EXPRESSION, Pattern.MULTILINE);
 
     boolean compiling = false;
     Project project;
+    SbtAnnotator.Error lastError;
 
     public SbtErrorCaptureFilter(Project project) {
         this.project = project;
@@ -66,6 +69,7 @@ public class SbtErrorCaptureFilter implements Filter {
                 }
             } else {
                 SbtAnnotator.errorMap.clear();
+                lastError = null;
                 for (String file : rescanSet) {
                     rescan(file);
                 }
@@ -75,7 +79,7 @@ public class SbtErrorCaptureFilter implements Filter {
             return null;
         }
 
-        Matcher match = pattern.matcher(line);
+        Matcher match = errorPattern.matcher(line);
 
         if (match.find()) {
             HighlightSeverity severity = HighlightSeverity.ERROR;
@@ -85,9 +89,17 @@ public class SbtErrorCaptureFilter implements Filter {
             String file = match.group(2);
             int errLine = Integer.parseInt(match.group(3));
             String message = match.group(4);
-            SbtAnnotator.errorMap.putValue(new File(file), new SbtAnnotator.Error(severity, file, errLine, message));
+            lastError = new SbtAnnotator.Error(severity, file, errLine, message);
+            SbtAnnotator.errorMap.putValue(new File(file), lastError);
             rescanSet.add(file);
+        } else {
+            match = offsetPattern.matcher(line);
+            if (match.find() && lastError != null) {
+                lastError.offset = match.group(1).length();
+            }
         }
+
+
 
         return null;
     }
