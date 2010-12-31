@@ -64,10 +64,13 @@ public class SbtAnnotator implements ExternalAnnotator {
 
         for (Error error : errors) {
             TextRange range = getLineTextRange(file.getText(), error.line, error.offset);
-            if (error.severity == HighlightSeverity.ERROR) {
-                holder.createErrorAnnotation(range, error.message);
-            } else if (error.severity == HighlightSeverity.WARNING) {
-                holder.createWarningAnnotation(range, error.message);
+
+            if (range.getEndOffset() > range.getStartOffset()) {
+                if (error.severity == HighlightSeverity.ERROR) {
+                    holder.createErrorAnnotation(range, error.message);
+                } else if (error.severity == HighlightSeverity.WARNING) {
+                    holder.createWarningAnnotation(range, error.message);
+                }
             }
         }
     }
